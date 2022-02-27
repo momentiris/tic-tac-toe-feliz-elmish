@@ -1,0 +1,26 @@
+body {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.board {
+  display: grid;
+  grid-template-rows: 50px 50px 50px;
+  grid-template-columns: 50px 50px 50px;
+  border-top: 1px solid black;
+  border-right: 1px solid black;
+  width: max-content;
+}
+
+.board div {
+  border-left: 1px solid black;
+  border-bottom: 1px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
