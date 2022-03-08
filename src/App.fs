@@ -9,7 +9,9 @@ type Player =
   | X
   | O
 
-type Cell = int
+type CellState = Option<Player>
+
+type Cell = { state: CellState; id: int }
 type Turn = Cell * Player
 type Board = Cell list
 
@@ -35,7 +37,7 @@ let renderCell (c: Cell, onClick) =
   Html.div [
     prop.className "cell"
     prop.onClick onClick
-    prop.text c
+    prop.text c.id
   ]
 
 let renderCells (cells, onClick) =
@@ -48,7 +50,16 @@ let renderCells (cells, onClick) =
     ]
   ]
 
-let makeCells = [ 0..8 ] |> List.map (fun x -> x)
+let deriveCellStateFromTurns (id: int, turns: Turn list) =
+  match turns |> List.tryFind (fun (c, _) -> c.id = id) with
+  | None -> None
+  | Some ((_, player)) -> { state = player, id = id }
+
+let makeCells turns =
+  [ 0..8 ]
+  |> List.map (fun id ->
+    { state = deriveCellStateFromTurns id turns
+      id = id })
 
 let derivePlayerLabel player =
   match player with
@@ -76,7 +87,7 @@ let Game () =
       ]
       Html.div [
         prop.children [
-          renderCells (makeCells, onClick)
+          renderCells (makeCells state.turns, onClick)
         ]
       ]
     ]
