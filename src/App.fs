@@ -5,39 +5,35 @@ open Feliz
 open Feliz.UseElmish
 open Fable.Core.JS
 
-type Player =
-  | X
-  | O
+open Types
+open PlayerLabel
 
-type CellState = Option<Player>
+let init () =
+  { player = X
+    turns = []
+    winner = None },
+  Cmd.none
 
-type Cell = { state: CellState; id: int }
-type Turn = Cell * Player
-type Board = Cell list
-
-type GameFinished = { winner: Player }
-type GameOngoing = { player: Player; turns: Turn list }
-
-type GameState =
-  | GameFinished
-  | GameOngoing
-
-type Msg = Move of Turn
-
-type State = Gamestate
-
-let init () = { player = X; turns = [] }, Cmd.none
-
-let deriveNextPlayer (player: Player) =
+let deriveNextPlayer (player) =
   match player with
   | X -> O
   | _ -> X
 
-let renderCell (c: Cell, onClick) =
+let derivePlayerLabelTextFromCellState (cellState) =
+  match cellState with
+  | Empty -> ""
+  | Player (p) ->
+    match p with
+    | X -> "X"
+    | O -> "O"
+
+let renderCell (cellState, onClick) =
   Html.div [
     prop.className "cell"
     prop.onClick onClick
-    prop.text c.id
+    prop.children [
+      Html.text (derivePlayerLabelTextFromCellState (cellState))
+    ]
   ]
 
 let renderCells (cells, onClick) =
@@ -46,19 +42,19 @@ let renderCells (cells, onClick) =
     prop.children [
       yield!
         cells
-        |> Seq.map (fun x -> renderCell (x, (fun _ -> onClick (x))))
+        |> Seq.map (fun x -> renderCell (x.state, (fun _ -> onClick (x))))
     ]
   ]
 
-let deriveCellStateFromTurns (id: int, turns: Turn list) =
+let deriveCellStateFromTurns (id: int, turns: Turn list) : CellState =
   match turns |> List.tryFind (fun (c, _) -> c.id = id) with
-  | None -> None
-  | Some ((_, player)) -> { state = player, id = id }
+  | None -> Empty
+  | Some turn -> Player(snd turn)
 
-let makeCells turns =
-  [ 0..8 ]
+let makeCells (cells: int List, turns: Turn list) =
+  cells
   |> List.map (fun id ->
-    { state = deriveCellStateFromTurns id turns
+    { state = deriveCellStateFromTurns (id, turns)
       id = id })
 
 let derivePlayerLabel player =
@@ -66,13 +62,22 @@ let derivePlayerLabel player =
   | X -> Html.text "X"
   | O -> Html.text "O"
 
+let isAllowedTurn (turns: Turn list) (turn: Turn) =
+  not (
+    turns
+    |> List.exists (fun t -> (fst t).id = (fst turn).id)
+  )
+
 let update msg state =
   match msg with
   | Move turn ->
-    { state with
-        player = deriveNextPlayer state.player
-        turns = state.turns |> List.append [ turn ] },
-    Cmd.none
+    match isAllowedTurn state.turns turn with
+    | false -> state, Cmd.none
+    | true ->
+      { state with
+          player = deriveNextPlayer state.player
+          turns = state.turns |> List.append [ turn ] },
+      Cmd.none
 
 [<ReactComponent>]
 let Game () =
@@ -82,12 +87,10 @@ let Game () =
 
   Html.div [
     prop.children [
-      Html.h1 [
-        derivePlayerLabel (state.player)
-      ]
+      PlayerLabel state.player
       Html.div [
         prop.children [
-          renderCells (makeCells state.turns, onClick)
+          renderCells (makeCells ([ 0..8 ], state.turns), onClick)
         ]
       ]
     ]

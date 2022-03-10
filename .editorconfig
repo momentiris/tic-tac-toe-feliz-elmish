@@ -1,3 +1,3 @@
 [*.fs]
-indent_size=2   # I feel 4 is a bit too much for front-end dev
+indent_size=2
 fsharp_single_argument_web_mode=true
