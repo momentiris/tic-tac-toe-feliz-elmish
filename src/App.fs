@@ -3,7 +3,6 @@ module App
 open Elmish
 open Feliz
 open Feliz.UseElmish
-open Fable.Core.JS
 
 open Types
 open PlayerLabel
@@ -26,25 +25,6 @@ let derivePlayerLabelTextFromCellState (cellState) =
     match p with
     | X -> "X"
     | O -> "O"
-
-let renderCell (cellState, onClick) =
-  Html.div [
-    prop.className "cell"
-    prop.onClick onClick
-    prop.children [
-      Html.text (derivePlayerLabelTextFromCellState (cellState))
-    ]
-  ]
-
-let renderCells (cells, onClick) =
-  Html.div [
-    prop.className "board"
-    prop.children [
-      yield!
-        cells
-        |> Seq.map (fun x -> renderCell (x.state, (fun _ -> onClick (x))))
-    ]
-  ]
 
 let deriveCellStateFromTurns (id: int, turns: Turn list) : CellState =
   match turns |> List.tryFind (fun (c, _) -> c.id = id) with
@@ -89,8 +69,18 @@ let Game () =
     prop.children [
       PlayerLabel state.player
       Html.div [
+        prop.className "board"
         prop.children [
-          renderCells (makeCells ([ 0..8 ], state.turns), onClick)
+          yield!
+            makeCells ([ 0..8 ], state.turns)
+            |> Seq.map (fun x ->
+              Html.div [
+                prop.className "cell"
+                prop.onClick (fun _ -> onClick (x))
+                prop.children [
+                  Html.text (derivePlayerLabelTextFromCellState (x.state))
+                ]
+              ])
         ]
       ]
     ]
